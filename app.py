@@ -25,17 +25,65 @@ st.set_page_config(
 # Default Watchlists
 # ─────────────────────────────────────────
 WATCHLIST_BR = [
+    # Ibovespa — Blue Chips
     "PETR4.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA",
     "ABEV3.SA", "WEGE3.SA", "RENT3.SA", "SUZB3.SA", "JBSS3.SA",
     "GGBR4.SA", "CSNA3.SA", "CMIG4.SA", "ELET3.SA", "RADL3.SA",
     "VIVT3.SA", "MGLU3.SA", "LREN3.SA", "CSAN3.SA", "BPAC11.SA",
+    # Ibovespa — Mid & Large Caps
+    "B3SA3.SA", "HAPV3.SA", "RDOR3.SA", "RAIL3.SA", "SBSP3.SA",
+    "ENEV3.SA", "TOTS3.SA", "PRIO3.SA", "RRRP3.SA", "VBBR3.SA",
+    "KLBN11.SA", "UGPA3.SA", "CCRO3.SA", "EQTL3.SA", "CPFE3.SA",
+    "CPLE6.SA", "TAEE11.SA", "ENBR3.SA", "CYRE3.SA", "MRVE3.SA",
+    # Financeiro
+    "SANB11.SA", "BRSR6.SA", "ABCB4.SA", "BMGB4.SA", "ITSA4.SA",
+    "BBSE3.SA", "SULA11.SA", "PSSA3.SA", "IRBR3.SA", "CXSE3.SA",
+    # Consumo & Varejo
+    "PETZ3.SA", "AMER3.SA", "SOMA3.SA", "GRND3.SA", "ALPA4.SA",
+    "CRFB3.SA", "ASAI3.SA", "MDIA3.SA", "NTCO3.SA", "HYPE3.SA",
+    # Indústria & Energia
+    "GOAU4.SA", "USIM5.SA", "BRKM5.SA", "UNIP6.SA", "FESA4.SA",
+    "AURE3.SA", "CSMG3.SA", "SAPR11.SA", "TRPL4.SA", "TIMS3.SA",
+    # Imobiliário & Construção
+    "EZTC3.SA", "DIRR3.SA", "EVEN3.SA", "TEND3.SA", "JHSF3.SA",
+    "MULT3.SA", "IGTI11.SA", "BRML3.SA", "ALSO3.SA", "SMAL11.SA",
+    # Tecnologia & Saúde
+    "LWSA3.SA", "CASH3.SA", "BMOB3.SA", "POSI3.SA", "INTB3.SA",
+    "FLRY3.SA", "DASA3.SA", "MATD3.SA", "QUAL3.SA", "ODPV3.SA",
+    # Logística & Transporte
+    "AZUL4.SA", "GOLL4.SA", "EMBR3.SA", "STBP3.SA", "HBSA3.SA",
+    "MOVI3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
 ]
 
 WATCHLIST_US = [
+    # Mega Caps — Tech
     "AAPL", "MSFT", "GOOGL", "AMZN", "META",
-    "NVDA", "TSLA", "JPM", "V", "UNH",
-    "XOM", "JNJ", "PG", "KO", "PEP",
-    "WMT", "MCD", "HD", "CRM", "NFLX",
+    "NVDA", "TSLA", "AVGO", "ORCL", "CRM",
+    "ADBE", "AMD", "INTC", "QCOM", "TXN",
+    "IBM", "NOW", "INTU", "AMAT", "MU",
+    # Finance
+    "JPM", "BAC", "WFC", "GS", "MS",
+    "C", "BLK", "SCHW", "AXP", "USB",
+    "V", "MA", "PYPL", "SQ", "FIS",
+    # Healthcare
+    "UNH", "JNJ", "PFE", "ABBV", "MRK",
+    "LLY", "TMO", "ABT", "DHR", "BMY",
+    "AMGN", "GILD", "ISRG", "MDT", "CI",
+    # Consumer
+    "PG", "KO", "PEP", "COST", "WMT",
+    "MCD", "NKE", "SBUX", "TGT", "LOW",
+    "HD", "DIS", "NFLX", "CMCSA", "BKNG",
+    # Energy & Materials
+    "XOM", "CVX", "COP", "SLB", "EOG",
+    "PSX", "VLO", "MPC", "LIN", "APD",
+    "FCX", "NEM", "DOW", "DD", "PPG",
+    # Industrials
+    "CAT", "DE", "HON", "UPS", "RTX",
+    "LMT", "BA", "GE", "MMM", "EMR",
+    "FDX", "WM", "CSX", "NSC", "UNP",
+    # REITs & Utilities
+    "AMT", "PLD", "CCI", "EQIX", "PSA",
+    "NEE", "DUK", "SO", "D", "AEP",
 ]
 
 WATCHLIST_FULL = WATCHLIST_BR + WATCHLIST_US
@@ -304,16 +352,26 @@ if df.empty:
     st.stop()
 
 # ─────────────────────────────────────────
-# Apply View Filter
+# Apply View Filter + Smart Sorting
 # ─────────────────────────────────────────
+# Baratos → do mais barato (maior yield) ao menos barato
+# Caros   → do mais caro (menor yield) ao menos caro
+# Justos  → yield descendente
+# Todos   → yield descendente
 if view_filter == "🟢 Apenas Baratos":
     filtered = df[df['Status'].str.contains('Barato')].copy()
+    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 elif view_filter == "🔴 Apenas Caros":
     filtered = df[df['Status'].str.contains('Caro')].copy()
+    filtered.sort_values('FCF Yield', ascending=True, inplace=True)
 elif view_filter == "🟡 Apenas Justos":
     filtered = df[df['Status'].str.contains('Justo')].copy()
+    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 else:
     filtered = df.copy()
+    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
+
+filtered.reset_index(drop=True, inplace=True)
 
 if filtered.empty:
     st.info(f"Nenhum ativo encontrado com o filtro '{view_filter}'.")
