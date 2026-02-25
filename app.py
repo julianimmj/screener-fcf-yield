@@ -81,37 +81,50 @@ st.markdown("""
     }
 
     /* ── KPI Cards ─────────────────────── */
-    .kpi-row {
+    .kpi-container {
         display: flex;
         gap: 1rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
     }
     .kpi-card {
-        flex: 1;
         background: linear-gradient(145deg, #1e1e3f, #16213e);
         border: 1px solid rgba(124, 77, 255, 0.2);
         border-radius: 16px;
-        padding: 1.4rem 1.6rem;
+        padding: 1rem;
         text-align: center;
-        transition: transform 0.2s, border-color 0.2s;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(124, 77, 255, 0.5);
+        width: 100%;
     }
     .kpi-card .value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #7c4dff;
+        font-size: 1.8rem;
+        font-weight: 800;
         margin: 0;
+        line-height: 1.2;
     }
     .kpi-card .label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 1px;
-        opacity: 0.5;
-        margin: 0.3rem 0 0;
-        color: #ccc;
+        opacity: 0.6;
+        margin-top: 0.4rem;
+    }
+
+    /* ── Clickable KPI styling ─────────── */
+    /* Target buttons to look like card secondary actions */
+    div[data-testid="stColumn"] .stButton button {
+        background: rgba(124, 77, 255, 0.05) !important;
+        border: 1px solid rgba(124, 77, 255, 0.2) !important;
+        color: #fff !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        margin-top: -0.5rem;
+    }
+    div[data-testid="stColumn"] .stButton button:hover {
+        border-color: #7c4dff !important;
+        background: rgba(124, 77, 255, 0.1) !important;
+        transform: translateY(-1px);
+    }
+    div[data-testid="stColumn"] .stButton button:active {
+        transform: scale(0.98);
     }
 
     /* ── Section Headers ───────────────── */
@@ -221,26 +234,19 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Filter preference — syncs with clickable KPI cards
+    # Filter preference
     st.subheader("🎯 Filtro de Exibição")
     filter_options = ["Todos", "🟢 Apenas Baratos", "🔴 Apenas Caros", "🟡 Apenas Justos"]
 
-    # Initialize session state for KPI filter
+    # Initialize session state for filter
     if "kpi_filter" not in st.session_state:
         st.session_state.kpi_filter = "Todos"
-
-    # Determine the current index from session state
-    current_idx = filter_options.index(st.session_state.kpi_filter) if st.session_state.kpi_filter in filter_options else 0
 
     view_filter = st.radio(
         "Exibir na tela:",
         filter_options,
-        index=current_idx,
-        key="sidebar_filter",
+        key="kpi_filter", # Single source of truth
     )
-
-    # Sync: if user changes the radio, update session state
-    st.session_state.kpi_filter = view_filter
 
     st.markdown("---")
 
@@ -405,7 +411,7 @@ if filtered.empty:
     st.stop()
 
 # ─────────────────────────────────────────
-# KPI Cards (clickable)
+# KPI Cards (Interactive)
 # ─────────────────────────────────────────
 n_total = len(df)
 n_cheap = int(df['Status'].str.contains('Barato').sum())
@@ -414,60 +420,45 @@ n_expensive = int(df['Status'].str.contains('Caro').sum())
 best_idx = df['FCF Yield'].idxmax()
 best = df.loc[best_idx]
 
-# Clickable KPI cards using Streamlit columns + buttons
-kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+# Layout for KPI cards
+k1, k2, k3, k4, k5 = st.columns(5)
 
-with kpi1:
-    st.markdown(f"""
+# Helper to avoid repetitive HTML
+def kpi_box(col, val, label, color="#7c4dff"):
+    col.markdown(f"""
     <div class="kpi-card">
-        <p class="value">{n_total}</p>
-        <p class="label">Ativos Analisados</p>
+        <p class="value" style="color: {color}">{val}</p>
+        <p class="label">{label}</p>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🔍 Ver Todos", key="kpi_all", use_container_width=True):
-        st.session_state.kpi_filter = "Todos"
-        st.rerun()
 
-with kpi2:
-    st.markdown(f"""
-    <div class="kpi-card">
-        <p class="value" style="color: #00e676">{n_cheap}</p>
-        <p class="label">🟢 Baratos</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button(f"🟢 Filtrar ({n_cheap})", key="kpi_cheap", use_container_width=True):
-        st.session_state.kpi_filter = "🟢 Apenas Baratos"
-        st.rerun()
+kpi_box(k1, n_total, "Analisados")
+if k1.button("🔍 Ver Tudo", key=f"btn_all_{n_total}", use_container_width=True):
+    st.session_state.kpi_filter = "Todos"
+    st.rerun()
 
-with kpi3:
-    st.markdown(f"""
-    <div class="kpi-card">
-        <p class="value" style="color: #ffab00">{n_fair}</p>
-        <p class="label">🟡 Justos</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button(f"🟡 Filtrar ({n_fair})", key="kpi_fair", use_container_width=True):
-        st.session_state.kpi_filter = "🟡 Apenas Justos"
-        st.rerun()
+kpi_box(k2, n_cheap, "🟢 Baratos", "#00e676")
+if k2.button("🟢 Filtrar", key=f"btn_cheap_{n_cheap}", use_container_width=True):
+    st.session_state.kpi_filter = "🟢 Apenas Baratos"
+    st.rerun()
 
-with kpi4:
-    st.markdown(f"""
-    <div class="kpi-card">
-        <p class="value" style="color: #ff1744">{n_expensive}</p>
-        <p class="label">🔴 Caros</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button(f"🔴 Filtrar ({n_expensive})", key="kpi_expensive", use_container_width=True):
-        st.session_state.kpi_filter = "🔴 Apenas Caros"
-        st.rerun()
+kpi_box(k3, n_fair, "🟡 Justos", "#ffab00")
+if k3.button("🟡 Filtrar", key=f"btn_fair_{n_fair}", use_container_width=True):
+    st.session_state.kpi_filter = "🟡 Apenas Justos"
+    st.rerun()
 
-with kpi5:
-    st.markdown(f"""
-    <div class="kpi-card">
-        <p class="value" style="font-size:1.4rem">{best['Ticker']}</p>
-        <p class="label">Maior Yield ({best['FCF Yield']:.1%})</p>
-    </div>
-    """, unsafe_allow_html=True)
+kpi_box(k4, n_expensive, "🔴 Caros", "#ff1744")
+if k4.button("🔴 Filtrar", key=f"btn_exp_{n_expensive}", use_container_width=True):
+    st.session_state.kpi_filter = "🔴 Apenas Caros"
+    st.rerun()
+
+kpi_box(k5, best['Ticker'], f"🏆 Maior Yield ({best['FCF Yield']:.1%})")
+if k5.button("🎯 Ver Ativo", key="btn_top", use_container_width=True):
+    st.session_state.kpi_filter = "Todos"
+    # We could add an asset-specific filter here if requested
+    st.rerun()
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # Main Content Tabs
