@@ -254,27 +254,16 @@ with st.sidebar:
     st.subheader("🎯 Filtro de Exibição")
     filter_options = ["Todos", "🟢 Apenas Baratos", "🔴 Apenas Caros", "🟡 Apenas Justos"]
 
-    # Initialize session state for filter
-    if "kpi_filter" not in st.session_state:
-        st.session_state.kpi_filter = "Todos"
+    # Initialize session state for filter if not present
+    if "sidebar_radio" not in st.session_state:
+        st.session_state.sidebar_radio = "Todos"
 
-    # Find index of current selection
-    try:
-        current_idx = filter_options.index(st.session_state.kpi_filter)
-    except ValueError:
-        current_idx = 0
-
+    # The radio uses the key as its primary state
     view_filter = st.radio(
         "Exibir na tela:",
         filter_options,
-        index=current_idx,
-        key="sidebar_radio" # Different key to avoid state conflict
+        key="sidebar_radio"
     )
-
-    # Update state if radio changes
-    if st.session_state.sidebar_radio != st.session_state.kpi_filter:
-        st.session_state.kpi_filter = st.session_state.sidebar_radio
-        st.rerun()
 
     st.markdown("---")
 
@@ -415,28 +404,19 @@ if df.empty:
 # ─────────────────────────────────────────
 # Apply View Filter + Smart Sorting
 # ─────────────────────────────────────────
-# Map view_filter labels to Status strings in the dataframe
-status_mapping = {
-    "🟢 Apenas Baratos": "🟢 Barato",
-    "🟡 Apenas Justos": "🟡 Justo",
-    "🔴 Apenas Caros": "🔴 Caro"
-}
 
-target_status = status_mapping.get(view_filter)
-
-if target_status:
-    # Use direct string comparison for robust filtering
-    filtered = df[df['Status'] == target_status].copy()
-    
-    # Custom sorting based on filter type
-    if "Baratos" in view_filter:
-        filtered.sort_values('FCF Yield', ascending=False, inplace=True)
-    elif "Caros" in view_filter:
-        filtered.sort_values('FCF Yield', ascending=True, inplace=True)
-    else:
-        filtered.sort_values('FCF Yield', ascending=False, inplace=True)
+# We use robust keyword matching to avoid emoji-encoding or spacing issues
+if "Baratos" in view_filter:
+    filtered = df[df['Status'].str.contains('Barato', na=False)].copy()
+    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
+elif "Caros" in view_filter:
+    filtered = df[df['Status'].str.contains('Caro', na=False)].copy()
+    filtered.sort_values('FCF Yield', ascending=True, inplace=True)
+elif "Justos" in view_filter:
+    filtered = df[df['Status'].str.contains('Justo', na=False)].copy()
+    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 else:
-    # "Todos" mode
+    # Mode "Todos"
     filtered = df.copy()
     filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 
@@ -468,7 +448,7 @@ def kpi_box(col, val, label, btn_label, state_val, color="#7c4dff"):
     </div>
     """, unsafe_allow_html=True)
     if col.button(btn_label, key=f"btn_{label}_{val}", use_container_width=True):
-        st.session_state.kpi_filter = state_val
+        st.session_state.sidebar_radio = state_val  # Update radio state directly
         st.rerun()
 
 kpi_box(k1, n_total, "Analisados", "🔍 Ver Todos", "Todos")
