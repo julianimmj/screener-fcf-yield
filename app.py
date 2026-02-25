@@ -12,7 +12,8 @@ import plotly.graph_objects as go
 import json
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
+from engine import run_screener, COMMODITY_SECTORS
 
 # ─────────────────────────────────────────
 # Page Config
@@ -239,28 +240,89 @@ with st.sidebar:
     )
 
     st.markdown("---")
+
+    # Manual refresh button
+    st.subheader("🔄 Atualizar Dados")
+    refresh_btn = st.button(
+        "🔄 Atualizar Dados Agora",
+        use_container_width=True,
+        type="primary",
+        help="Busca dados atualizados do Yahoo Finance para todos os ativos."
+    )
     st.caption(f"📅 Última atualização: **{get_last_updated()}**")
-    st.caption("Dados atualizados diariamente às 03:00 BRT via GitHub Actions.")
+    st.info(
+        "💡 Os dados são atualizados **automaticamente a cada 24 horas** "
+        "(às 03:00 BRT via GitHub Actions).\n\n"
+        "Use o botão acima apenas se precisar de dados em tempo real.",
+        icon="ℹ️"
+    )
 
 # ─────────────────────────────────────────
-# Load Data
+# Load Data (from CSV or live refresh)
 # ─────────────────────────────────────────
 csv_path = str(CSV_CONSERVATIVE if conservative else CSV_NORMAL)
-df = load_cached_data(csv_path)
 
-if df.empty:
-    st.error(
-        "❌ Dados ainda não disponíveis. O GitHub Actions precisa rodar pelo menos uma vez.\n\n"
-        "**Para gerar os dados agora:**\n"
-        "1. Vá em [Actions](https://github.com/julianimmj/screener-fcf-yield/actions) no GitHub\n"
-        "2. Selecione 'Daily Data Update'\n"
-        "3. Clique em 'Run workflow'"
-    )
-    st.stop()
+if refresh_btn:
+    # ── Live refresh from Yahoo Finance ──
+    from update_data import ALL_TICKERS
+    st.cache_data.clear()
+
+    progress_bar = st.progress(0, text="⏳ Conectando ao Yahoo Finance...")
+    status_text = st.empty()
+    total = len(ALL_TICKERS)
+
+    def update_progress(current, total_count):
+        pct = current / total_count
+        progress_bar.progress(pct, text=f"⏳ Processando {current}/{total_count} ativos...")
+
+    # Fetch data for the selected mode
+    status_text.info(f"🔄 Buscando dados {'(Modo Conservador)' if conservative else '(Modo Normal)'}...")
+    df = run_screener(ALL_TICKERS, conservative=conservative, progress_callback=update_progress)
+
+    if not df.empty:
+        # Save to CSV
+        os.makedirs(str(DATA_DIR), exist_ok=True)
+        df.to_csv(csv_path, index=False)
+
+        # Also fetch the other mode
+        other_conservative = not conservative
+        other_csv = str(CSV_CONSERVATIVE if other_conservative else CSV_NORMAL)
+        status_text.info(f"🔄 Buscando dados {'(Modo Conservador)' if other_conservative else '(Modo Normal)'}...")
+        progress_bar.progress(0, text="⏳ Buscando segundo modo...")
+        df_other = run_screener(ALL_TICKERS, conservative=other_conservative, progress_callback=update_progress)
+        if not df_other.empty:
+            df_other.to_csv(other_csv, index=False)
+
+        # Update metadata
+        now = datetime.now(timezone.utc)
+        meta = {
+            "last_updated": now.isoformat(),
+            "tickers_total": len(ALL_TICKERS),
+            "tickers_normal_ok": len(df) if not conservative else len(df_other) if not df_other.empty else 0,
+            "tickers_conservative_ok": len(df) if conservative else len(df_other) if not df_other.empty else 0,
+        }
+        pd.Series(meta).to_json(str(METADATA_FILE))
+
+        progress_bar.empty()
+        status_text.success(f"✅ Dados atualizados! {len(df)} ativos processados.")
+    else:
+        progress_bar.empty()
+        status_text.error("❌ Erro ao buscar dados. Tente novamente em alguns minutos.")
+        st.stop()
+else:
+    # ── Load from cached CSV ──
+    df = load_cached_data(csv_path)
+
+    if df.empty:
+        st.error(
+            "❌ Dados ainda não disponíveis.\n\n"
+            "Clique em **🔄 Atualizar Dados Agora** na barra lateral para buscar os dados."
+        )
+        st.stop()
 
 # Show data freshness
 last_updated = get_last_updated()
-st.markdown(f'<div class="freshness">📅 Dados de: <b>{last_updated}</b> · {len(df)} ativos analisados · Atualização automática diária</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="freshness">📅 Dados de: <b>{last_updated}</b> · {len(df)} ativos analisados · Atualização automática a cada 24h</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # Methodology (collapsible)
