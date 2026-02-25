@@ -254,16 +254,27 @@ with st.sidebar:
     st.subheader("🎯 Filtro de Exibição")
     filter_options = ["Todos", "🟢 Apenas Baratos", "🔴 Apenas Caros", "🟡 Apenas Justos"]
 
-    # Initialize session state for filter if not present
-    if "sidebar_radio" not in st.session_state:
-        st.session_state.sidebar_radio = "Todos"
+    # Initialize kpi_filter if not present
+    if "kpi_filter" not in st.session_state:
+        st.session_state.kpi_filter = "Todos"
 
-    # The radio uses the key as its primary state
+    # Find the index for the radio
+    try:
+        radio_idx = filter_options.index(st.session_state.kpi_filter)
+    except ValueError:
+        radio_idx = 0
+
+    # We use a temp variable for the radio and sync it manually to avoid StreamlitAPIException
     view_filter = st.radio(
         "Exibir na tela:",
         filter_options,
-        key="sidebar_radio"
+        index=radio_idx,
     )
+
+    # Sync: if user interacts with radio, update the session state
+    if view_filter != st.session_state.kpi_filter:
+        st.session_state.kpi_filter = view_filter
+        st.rerun()
 
     st.markdown("---")
 
@@ -405,15 +416,17 @@ if df.empty:
 # Apply View Filter + Smart Sorting
 # ─────────────────────────────────────────
 
-# We use robust keyword matching to avoid emoji-encoding or spacing issues
+# We use robust keyword matching to ensure filtering ALWAYS works
+# This handles any discrepancies in emojis, plural/singular, or whitespace
 if "Baratos" in view_filter:
-    filtered = df[df['Status'].str.contains('Barato', na=False)].copy()
+    # Use exact word boundaries or direct substring checks
+    filtered = df[df['Status'].str.contains('Barato', na=False, case=False)].copy()
     filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 elif "Caros" in view_filter:
-    filtered = df[df['Status'].str.contains('Caro', na=False)].copy()
+    filtered = df[df['Status'].str.contains('Caro', na=False, case=False)].copy()
     filtered.sort_values('FCF Yield', ascending=True, inplace=True)
 elif "Justos" in view_filter:
-    filtered = df[df['Status'].str.contains('Justo', na=False)].copy()
+    filtered = df[df['Status'].str.contains('Justo', na=False, case=False)].copy()
     filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 else:
     # Mode "Todos"
@@ -448,7 +461,7 @@ def kpi_box(col, val, label, btn_label, state_val, color="#7c4dff"):
     </div>
     """, unsafe_allow_html=True)
     if col.button(btn_label, key=f"btn_{label}_{val}", use_container_width=True):
-        st.session_state.sidebar_radio = state_val  # Update radio state directly
+        st.session_state.kpi_filter = state_val  # Update global state
         st.rerun()
 
 kpi_box(k1, n_total, "Analisados", "🔍 Ver Todos", "Todos")
