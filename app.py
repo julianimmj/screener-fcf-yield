@@ -93,10 +93,15 @@ st.markdown("""
         padding: 1.2rem;
         text-align: center;
         width: 100%;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    .kpi-card:hover {
+        border-color: rgba(124, 77, 255, 0.5);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
     .kpi-card .value {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
         font-weight: 800;
         margin: 0;
         line-height: 1;
@@ -104,35 +109,38 @@ st.markdown("""
     .kpi-card .label {
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 1.2px;
-        opacity: 0.7;
-        margin-top: 0.5rem;
-        color: #ccc;
+        letter-spacing: 1.5px;
+        opacity: 0.8;
+        margin-top: 0.6rem;
+        color: #ddd;
     }
 
     /* ── Clickable KPI styling ─────────── */
     .stButton > button {
-        border-radius: 12px !important;
-        transition: all 0.2s ease !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     
-    /* Specific styling for KPI buttons area */
+    /* KPI-specific buttons area */
     div[data-testid="stColumn"] .stButton button {
-        background: rgba(124, 77, 255, 0.1) !important;
-        border: 1px solid rgba(124, 77, 255, 0.3) !important;
+        background: rgba(124, 77, 255, 0.15) !important;
+        border: 1px solid rgba(124, 77, 255, 0.4) !important;
         color: #fff !important;
-        font-size: 0.8rem !important;
-        height: 2.5rem !important;
-        margin-top: 0.8rem !important;
+        font-size: 0.85rem !important;
+        height: 2.8rem !important;
+        margin-top: 1rem !important;
+        width: 100%;
     }
     div[data-testid="stColumn"] .stButton button:hover {
-        background: rgba(124, 77, 255, 0.2) !important;
+        background: #7c4dff !important;
         border-color: #7c4dff !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(124, 77, 255, 0.2);
+        color: #fff !important;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(124, 77, 255, 0.4);
     }
     div[data-testid="stColumn"] .stButton button:active {
-        transform: translateY(0);
+        transform: translateY(-1px);
     }
 
     /* ── Section Headers ───────────────── */
@@ -407,20 +415,28 @@ if df.empty:
 # ─────────────────────────────────────────
 # Apply View Filter + Smart Sorting
 # ─────────────────────────────────────────
-# Baratos → do mais barato (maior yield) ao menos barato
-# Caros   → do mais caro (menor yield) ao menos caro
-# Justos  → yield descendente
-# Todos   → yield descendente
-if view_filter == "🟢 Apenas Baratos":
-    filtered = df[df['Status'].str.contains('Barato')].copy()
-    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
-elif view_filter == "🔴 Apenas Caros":
-    filtered = df[df['Status'].str.contains('Caro')].copy()
-    filtered.sort_values('FCF Yield', ascending=True, inplace=True)
-elif view_filter == "🟡 Apenas Justos":
-    filtered = df[df['Status'].str.contains('Justo')].copy()
-    filtered.sort_values('FCF Yield', ascending=False, inplace=True)
+# Map view_filter labels to Status strings in the dataframe
+status_mapping = {
+    "🟢 Apenas Baratos": "🟢 Barato",
+    "🟡 Apenas Justos": "🟡 Justo",
+    "🔴 Apenas Caros": "🔴 Caro"
+}
+
+target_status = status_mapping.get(view_filter)
+
+if target_status:
+    # Use direct string comparison for robust filtering
+    filtered = df[df['Status'] == target_status].copy()
+    
+    # Custom sorting based on filter type
+    if "Baratos" in view_filter:
+        filtered.sort_values('FCF Yield', ascending=False, inplace=True)
+    elif "Caros" in view_filter:
+        filtered.sort_values('FCF Yield', ascending=True, inplace=True)
+    else:
+        filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 else:
+    # "Todos" mode
     filtered = df.copy()
     filtered.sort_values('FCF Yield', ascending=False, inplace=True)
 
