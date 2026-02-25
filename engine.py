@@ -13,6 +13,8 @@ Ajustes opcionais (Modo Conservador):
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # ─────────────────────────────────────────────
@@ -211,8 +213,20 @@ def calculate_fcf(ticker_symbol: str, conservative: bool = False) -> dict | None
         }
 
     except Exception as e:
-        print(f"[engine] Erro ao processar {ticker_symbol}: {e}")
         return None
+
+
+def _calculate_with_retry(ticker_symbol: str, conservative: bool,
+                          max_retries: int = 3) -> dict | None:
+    """Wrap calculate_fcf with exponential backoff retry."""
+    for attempt in range(max_retries):
+        result = calculate_fcf(ticker_symbol, conservative)
+        if result is not None:
+            return result
+        # Exponential backoff: 1s, 2s, 4s
+        wait = 2 ** attempt
+        time.sleep(wait)
+    return None
 
 
 # ─────────────────────────────────────────────
@@ -243,13 +257,44 @@ def classify_status(row: pd.Series) -> str:
 # ─────────────────────────────────────────────
 
 def run_screener(tickers: list[str],
-                 conservative: bool = False) -> pd.DataFrame:
-    """Run the screener for a list of tickers and return a sorted DataFrame."""
+                 conservative: bool = False,
+                 progress_callback=None,
+                 max_workers: int = 5) -> pd.DataFrame:
+    """
+    Run the screener for a list of tickers with rate limiting.
+
+    Args:
+        tickers: List of ticker symbols
+        conservative: Conservative mode toggle
+        progress_callback: Optional callable(current, total) for progress updates
+        max_workers: Number of parallel workers (keep low to avoid rate limits)
+    """
     results = []
-    for t in tickers:
-        row = calculate_fcf(t.strip(), conservative=conservative)
-        if row is not None:
-            results.append(row)
+    total = len(tickers)
+    completed = 0
+
+    # Process in batches with controlled concurrency
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_ticker = {}
+        for i, t in enumerate(tickers):
+            # Stagger submissions to avoid burst requests
+            if i > 0 and i % max_workers == 0:
+                time.sleep(1.0)  # pause between each batch
+            future = executor.submit(_calculate_with_retry, t.strip(), conservative)
+            future_to_ticker[future] = t.strip()
+
+        for future in as_completed(future_to_ticker):
+            ticker = future_to_ticker[future]
+            completed += 1
+            try:
+                row = future.result()
+                if row is not None:
+                    results.append(row)
+            except Exception:
+                pass  # already handled in retry wrapper
+
+            if progress_callback:
+                progress_callback(completed, total)
 
     if not results:
         return pd.DataFrame()

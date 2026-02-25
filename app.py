@@ -1,7 +1,7 @@
 """
 app.py — Screener FCF Yield "Antigravity"
 Dashboard profissional para Streamlit Cloud.
-Dados carregados automaticamente com cache.
+Dados carregados de CSVs pré-gerados (atualizados diariamente via GitHub Actions).
 """
 
 import streamlit as st
@@ -9,7 +9,10 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from engine import run_screener, COMMODITY_SECTORS
+import json
+import os
+from pathlib import Path
+from datetime import datetime
 
 # ─────────────────────────────────────────
 # Page Config
@@ -22,71 +25,12 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────
-# Default Watchlists
+# Data Paths
 # ─────────────────────────────────────────
-WATCHLIST_BR = [
-    # Ibovespa — Blue Chips
-    "PETR4.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA",
-    "ABEV3.SA", "WEGE3.SA", "RENT3.SA", "SUZB3.SA", "JBSS3.SA",
-    "GGBR4.SA", "CSNA3.SA", "CMIG4.SA", "ELET3.SA", "RADL3.SA",
-    "VIVT3.SA", "MGLU3.SA", "LREN3.SA", "CSAN3.SA", "BPAC11.SA",
-    # Ibovespa — Mid & Large Caps
-    "B3SA3.SA", "HAPV3.SA", "RDOR3.SA", "RAIL3.SA", "SBSP3.SA",
-    "ENEV3.SA", "TOTS3.SA", "PRIO3.SA", "RRRP3.SA", "VBBR3.SA",
-    "KLBN11.SA", "UGPA3.SA", "CCRO3.SA", "EQTL3.SA", "CPFE3.SA",
-    "CPLE6.SA", "TAEE11.SA", "ENBR3.SA", "CYRE3.SA", "MRVE3.SA",
-    # Financeiro
-    "SANB11.SA", "BRSR6.SA", "ABCB4.SA", "BMGB4.SA", "ITSA4.SA",
-    "BBSE3.SA", "SULA11.SA", "PSSA3.SA", "IRBR3.SA", "CXSE3.SA",
-    # Consumo & Varejo
-    "PETZ3.SA", "AMER3.SA", "SOMA3.SA", "GRND3.SA", "ALPA4.SA",
-    "CRFB3.SA", "ASAI3.SA", "MDIA3.SA", "NTCO3.SA", "HYPE3.SA",
-    # Indústria & Energia
-    "GOAU4.SA", "USIM5.SA", "BRKM5.SA", "UNIP6.SA", "FESA4.SA",
-    "AURE3.SA", "CSMG3.SA", "SAPR11.SA", "TRPL4.SA", "TIMS3.SA",
-    # Imobiliário & Construção
-    "EZTC3.SA", "DIRR3.SA", "EVEN3.SA", "TEND3.SA", "JHSF3.SA",
-    "MULT3.SA", "IGTI11.SA", "BRML3.SA", "ALSO3.SA", "SMAL11.SA",
-    # Tecnologia & Saúde
-    "LWSA3.SA", "CASH3.SA", "BMOB3.SA", "POSI3.SA", "INTB3.SA",
-    "FLRY3.SA", "DASA3.SA", "MATD3.SA", "QUAL3.SA", "ODPV3.SA",
-    # Logística & Transporte
-    "AZUL4.SA", "GOLL4.SA", "EMBR3.SA", "STBP3.SA", "HBSA3.SA",
-    "MOVI3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
-]
-
-WATCHLIST_US = [
-    # Mega Caps — Tech
-    "AAPL", "MSFT", "GOOGL", "AMZN", "META",
-    "NVDA", "TSLA", "AVGO", "ORCL", "CRM",
-    "ADBE", "AMD", "INTC", "QCOM", "TXN",
-    "IBM", "NOW", "INTU", "AMAT", "MU",
-    # Finance
-    "JPM", "BAC", "WFC", "GS", "MS",
-    "C", "BLK", "SCHW", "AXP", "USB",
-    "V", "MA", "PYPL", "SQ", "FIS",
-    # Healthcare
-    "UNH", "JNJ", "PFE", "ABBV", "MRK",
-    "LLY", "TMO", "ABT", "DHR", "BMY",
-    "AMGN", "GILD", "ISRG", "MDT", "CI",
-    # Consumer
-    "PG", "KO", "PEP", "COST", "WMT",
-    "MCD", "NKE", "SBUX", "TGT", "LOW",
-    "HD", "DIS", "NFLX", "CMCSA", "BKNG",
-    # Energy & Materials
-    "XOM", "CVX", "COP", "SLB", "EOG",
-    "PSX", "VLO", "MPC", "LIN", "APD",
-    "FCX", "NEM", "DOW", "DD", "PPG",
-    # Industrials
-    "CAT", "DE", "HON", "UPS", "RTX",
-    "LMT", "BA", "GE", "MMM", "EMR",
-    "FDX", "WM", "CSX", "NSC", "UNP",
-    # REITs & Utilities
-    "AMT", "PLD", "CCI", "EQIX", "PSA",
-    "NEE", "DUK", "SO", "D", "AEP",
-]
-
-WATCHLIST_FULL = WATCHLIST_BR + WATCHLIST_US
+DATA_DIR = Path(__file__).parent / "data"
+CSV_NORMAL = DATA_DIR / "screener_normal.csv"
+CSV_CONSERVATIVE = DATA_DIR / "screener_conservative.csv"
+METADATA_FILE = DATA_DIR / "metadata.json"
 
 # ─────────────────────────────────────────
 # Custom CSS — Premium Dark Theme
@@ -169,32 +113,6 @@ st.markdown("""
         color: #ccc;
     }
 
-    /* ── Status Badges ─────────────────── */
-    .badge-barato {
-        background: rgba(0, 230, 118, 0.15);
-        color: #00e676;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-    .badge-justo {
-        background: rgba(255, 171, 0, 0.15);
-        color: #ffab00;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-    .badge-caro {
-        background: rgba(255, 23, 68, 0.15);
-        color: #ff1744;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-
     /* ── Section Headers ───────────────── */
     .section-title {
         font-size: 1.3rem;
@@ -225,6 +143,21 @@ st.markdown("""
         padding: 8px 20px;
         font-weight: 600;
     }
+
+    /* ── Data freshness badge ──────────── */
+    .freshness {
+        background: rgba(124, 77, 255, 0.1);
+        border: 1px solid rgba(124, 77, 255, 0.3);
+        border-radius: 12px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        color: #aaa;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+    .freshness b {
+        color: #7c4dff;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -241,6 +174,31 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+
+# ─────────────────────────────────────────
+# Load cached data
+# ─────────────────────────────────────────
+@st.cache_data(ttl=3600)
+def load_cached_data(csv_path: str) -> pd.DataFrame:
+    """Load pre-generated CSV data. Returns empty DataFrame if file doesn't exist."""
+    if os.path.exists(csv_path):
+        return pd.read_csv(csv_path)
+    return pd.DataFrame()
+
+
+def get_last_updated() -> str:
+    """Read the last update timestamp from metadata."""
+    if METADATA_FILE.exists():
+        try:
+            with open(METADATA_FILE) as f:
+                meta = json.load(f)
+            dt = datetime.fromisoformat(meta.get("last_updated", ""))
+            return dt.strftime("%d/%m/%Y às %H:%M UTC")
+        except Exception:
+            pass
+    return "Desconhecido"
+
+
 # ─────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────
@@ -249,32 +207,8 @@ with st.sidebar:
     st.caption("Screener de Fluxo de Caixa Livre")
     st.markdown("---")
 
-    # Watchlist Selection
-    st.subheader("📋 Watchlist")
-    watchlist_option = st.radio(
-        "Escolha a lista de ativos:",
-        ["🇧🇷 B3 (Ibovespa)", "🇺🇸 NYSE/NASDAQ", "🌎 Completa (BR + US)", "✏️ Personalizada"],
-        index=2,
-    )
-
-    if watchlist_option == "🇧🇷 B3 (Ibovespa)":
-        selected_tickers = WATCHLIST_BR
-    elif watchlist_option == "🇺🇸 NYSE/NASDAQ":
-        selected_tickers = WATCHLIST_US
-    elif watchlist_option == "🌎 Completa (BR + US)":
-        selected_tickers = WATCHLIST_FULL
-    else:
-        custom_input = st.text_area(
-            "Tickers (vírgula):",
-            value=", ".join(WATCHLIST_FULL),
-            height=120,
-        )
-        selected_tickers = [t.strip().upper() for t in custom_input.split(",") if t.strip()]
-
-    st.markdown("---")
-
     # Conservative Mode
-    st.subheader("⚙️ Ajustes")
+    st.subheader("⚙️ Modo de Análise")
     conservative = st.toggle(
         "Modo Conservador",
         value=False,
@@ -295,16 +229,38 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    run_btn = st.button("🚀 Atualizar Dados", use_container_width=True, type="primary")
+
+    # Market filter
+    st.subheader("🌎 Mercado")
+    market_filter = st.radio(
+        "Exibir ativos de:",
+        ["Todos", "🇧🇷 Apenas B3", "🇺🇸 Apenas NYSE/NASDAQ"],
+        index=0,
+    )
+
+    st.markdown("---")
+    st.caption(f"📅 Última atualização: **{get_last_updated()}**")
+    st.caption("Dados atualizados diariamente às 03:00 BRT via GitHub Actions.")
 
 # ─────────────────────────────────────────
-# Cached Data Fetching
+# Load Data
 # ─────────────────────────────────────────
-@st.cache_data(ttl=3600, show_spinner=False)  # Cache for 1 hour
-def fetch_data(tickers_tuple, conservative_mode):
-    """Fetch and cache screener data."""
-    return run_screener(list(tickers_tuple), conservative=conservative_mode)
+csv_path = str(CSV_CONSERVATIVE if conservative else CSV_NORMAL)
+df = load_cached_data(csv_path)
 
+if df.empty:
+    st.error(
+        "❌ Dados ainda não disponíveis. O GitHub Actions precisa rodar pelo menos uma vez.\n\n"
+        "**Para gerar os dados agora:**\n"
+        "1. Vá em [Actions](https://github.com/julianimmj/screener-fcf-yield/actions) no GitHub\n"
+        "2. Selecione 'Daily Data Update'\n"
+        "3. Clique em 'Run workflow'"
+    )
+    st.stop()
+
+# Show data freshness
+last_updated = get_last_updated()
+st.markdown(f'<div class="freshness">📅 Dados de: <b>{last_updated}</b> · {len(df)} ativos analisados · Atualização automática diária</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # Methodology (collapsible)
@@ -336,19 +292,15 @@ Yield = FCF ÷ Market Cap
         """)
 
 # ─────────────────────────────────────────
-# Load Data (auto on first visit, or on button click)
+# Apply Market Filter
 # ─────────────────────────────────────────
-tickers_key = tuple(sorted(selected_tickers))
-
-# Auto-load on page visit (cached), or force refresh on button
-if run_btn:
-    st.cache_data.clear()
-
-with st.spinner(f"⏳ Analisando {len(selected_tickers)} ativos via Yahoo Finance… (dados serão cacheados por 1h)"):
-    df = fetch_data(tickers_key, conservative)
+if market_filter == "🇧🇷 Apenas B3":
+    df = df[df['Ticker'].str.endswith('.SA')].copy()
+elif market_filter == "🇺🇸 Apenas NYSE/NASDAQ":
+    df = df[~df['Ticker'].str.endswith('.SA')].copy()
 
 if df.empty:
-    st.error("❌ Não foi possível obter dados. Verifique os tickers e tente novamente.")
+    st.info("Nenhum ativo encontrado para esse mercado.")
     st.stop()
 
 # ─────────────────────────────────────────
@@ -384,7 +336,8 @@ n_total = len(df)
 n_cheap = df['Status'].str.contains('Barato').sum()
 n_fair = df['Status'].str.contains('Justo').sum()
 n_expensive = df['Status'].str.contains('Caro').sum()
-best = df.iloc[0]  # Already sorted by yield desc
+best_idx = df['FCF Yield'].idxmax()
+best = df.loc[best_idx]
 
 st.markdown(f"""
 <div class="kpi-row">
@@ -421,7 +374,7 @@ with tab_table:
     st.markdown(f'<div class="section-title">Ranking por FCF Yield — {view_filter}</div>', unsafe_allow_html=True)
 
     # Sector sub-filter
-    available_sectors = sorted(filtered['Setor'].unique())
+    available_sectors = sorted(filtered['Setor'].dropna().unique())
     if len(available_sectors) > 1:
         selected_sectors = st.multiselect(
             "Filtrar por Setor:",
@@ -433,49 +386,62 @@ with tab_table:
     else:
         table_df = filtered.copy()
 
-    display = table_df[[
-        'Ticker', 'Preço', 'FCF Yield', 'Status',
-        'Rev Growth 5Y', 'Setor', 'Market Cap', 'FCF',
-        'Ajuste Expansão',
-    ]].copy()
+    # Columns to display
+    display_cols = ['Ticker', 'Preço', 'FCF Yield', 'Status',
+                    'Rev Growth 5Y', 'Setor', 'Market Cap', 'FCF']
+    if 'Ajuste Expansão' in table_df.columns:
+        display_cols.append('Ajuste Expansão')
+
+    display = table_df[[c for c in display_cols if c in table_df.columns]].copy()
 
     # Format
     def fmt_pct(v):
-        return f"{v:.2%}" if pd.notna(v) else "–"
+        try:
+            return f"{float(v):.2%}" if pd.notna(v) else "–"
+        except (ValueError, TypeError):
+            return "–"
 
     def fmt_brl(v):
-        if pd.isna(v) or v == 0:
+        try:
+            v = float(v)
+            if pd.isna(v) or v == 0:
+                return "–"
+            return f"{v/1e9:,.2f} B"
+        except (ValueError, TypeError):
             return "–"
-        return f"{v/1e9:,.2f} B"
 
     display['FCF Yield'] = table_df['FCF Yield'].map(fmt_pct)
     display['Rev Growth 5Y'] = table_df['Rev Growth 5Y'].map(fmt_pct)
     display['Market Cap'] = table_df['Market Cap'].map(fmt_brl)
     display['FCF'] = table_df['FCF'].map(fmt_brl)
-    display['Preço'] = table_df['Preço'].map(lambda v: f"{v:,.2f}" if v else "–")
-    display['Ajuste Expansão'] = display['Ajuste Expansão'].map(
-        lambda v: "⚠️ Sim" if v else "–"
-    )
+    display['Preço'] = table_df['Preço'].map(lambda v: f"{v:,.2f}" if pd.notna(v) and v else "–")
+    if 'Ajuste Expansão' in display.columns:
+        display['Ajuste Expansão'] = display['Ajuste Expansão'].map(
+            lambda v: "⚠️ Sim" if v is True or v == "True" else "–"
+        )
+
+    col_config = {
+        "Ticker": st.column_config.TextColumn("Ativo", width="small"),
+        "Preço": st.column_config.TextColumn("Preço", width="small"),
+        "FCF Yield": st.column_config.TextColumn("FCF Yield", width="small"),
+        "Status": st.column_config.TextColumn("Status", width="small"),
+        "Rev Growth 5Y": st.column_config.TextColumn("Cresc. Receita 5A", width="small"),
+        "Setor": st.column_config.TextColumn("Setor", width="medium"),
+        "Market Cap": st.column_config.TextColumn("Market Cap", width="small"),
+        "FCF": st.column_config.TextColumn("FCF", width="small"),
+    }
+    if 'Ajuste Expansão' in display.columns:
+        col_config["Ajuste Expansão"] = st.column_config.TextColumn("Ajuste Capex", width="small")
 
     st.dataframe(
         display,
         use_container_width=True,
         hide_index=True,
-        height=min(600, 35 * len(display) + 38),
-        column_config={
-            "Ticker": st.column_config.TextColumn("Ativo", width="small"),
-            "Preço": st.column_config.TextColumn("Preço", width="small"),
-            "FCF Yield": st.column_config.TextColumn("FCF Yield", width="small"),
-            "Status": st.column_config.TextColumn("Status", width="small"),
-            "Rev Growth 5Y": st.column_config.TextColumn("Cresc. Receita 5A", width="small"),
-            "Setor": st.column_config.TextColumn("Setor", width="medium"),
-            "Market Cap": st.column_config.TextColumn("Market Cap", width="small"),
-            "FCF": st.column_config.TextColumn("FCF", width="small"),
-            "Ajuste Expansão": st.column_config.TextColumn("Ajuste Capex", width="small"),
-        },
+        height=min(700, 35 * len(display) + 38),
+        column_config=col_config,
     )
 
-    st.caption(f"Exibindo {len(display)} de {n_total} ativos · Dados cacheados por 1h")
+    st.caption(f"Exibindo {len(display)} de {n_total} ativos · Dados atualizados diariamente")
 
 # ── Tab 2: Bubble Chart ─────────────
 with tab_chart:
@@ -520,10 +486,10 @@ with tab_chart:
         yaxis_title="Crescimento Receita 5A (%)",
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter", size=13, color="#ccc"),
+        font={"family": "Inter", "size": 13, "color": "#ccc"},
         legend_title_text="",
         height=550,
-        margin=dict(l=50, r=30, t=30, b=50),
+        margin={"l": 50, "r": 30, "t": 30, "b": 50},
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -537,15 +503,17 @@ with tab_chart:
 with tab_detail:
     st.markdown('<div class="section-title">Breakdown dos Componentes do FCF</div>', unsafe_allow_html=True)
 
-    detail = filtered[[
-        'Ticker', 'FCO', 'Adjusted FCO', 'Capex', 'Capex (Raw)',
-        'Depreciação', 'Juros', 'Impostos', 'Arrendamentos', 'FCF',
-    ]].copy()
+    detail_cols = ['Ticker', 'FCO', 'Adjusted FCO', 'Capex', 'Capex (Raw)',
+                   'Depreciação', 'Juros', 'Impostos', 'Arrendamentos', 'FCF']
+    available_detail = [c for c in detail_cols if c in filtered.columns]
+    detail = filtered[available_detail].copy()
 
     for col in detail.columns:
         if col == 'Ticker':
             continue
-        detail[col] = detail[col].map(lambda v: f"{v/1e6:,.0f} M" if pd.notna(v) and v != 0 else "–")
+        detail[col] = detail[col].map(
+            lambda v: f"{float(v)/1e6:,.0f} M" if pd.notna(v) and float(v) != 0 else "–"
+        )
 
     st.dataframe(detail, use_container_width=True, hide_index=True)
 
@@ -557,8 +525,8 @@ with tab_detail:
 st.markdown("---")
 st.markdown("""
 <div style="text-align:center; opacity:0.4; font-size:0.8rem; padding: 1rem 0">
-    <b>Screener FCF Yield "Antigravity"</b> · Dados via Yahoo Finance · 
-    <a href="https://github.com/julianimmj" target="_blank" style="color:#7c4dff">github.com/julianimmj</a><br>
+    <b>Screener FCF Yield "Antigravity"</b> · Dados via Yahoo Finance (atualização diária) · 
+    <a href="https://github.com/julianimmj/screener-fcf-yield" target="_blank" style="color:#7c4dff">github.com/julianimmj</a><br>
     Metodologia: (FCO − Capex − Juros − Impostos − Leases) ÷ Market Cap
 </div>
 """, unsafe_allow_html=True)
