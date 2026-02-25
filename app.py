@@ -90,41 +90,49 @@ st.markdown("""
         background: linear-gradient(145deg, #1e1e3f, #16213e);
         border: 1px solid rgba(124, 77, 255, 0.2);
         border-radius: 16px;
-        padding: 1rem;
+        padding: 1.2rem;
         text-align: center;
         width: 100%;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .kpi-card .value {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         font-weight: 800;
         margin: 0;
-        line-height: 1.2;
+        line-height: 1;
     }
     .kpi-card .label {
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        opacity: 0.6;
-        margin-top: 0.4rem;
+        letter-spacing: 1.2px;
+        opacity: 0.7;
+        margin-top: 0.5rem;
+        color: #ccc;
     }
 
     /* ── Clickable KPI styling ─────────── */
-    /* Target buttons to look like card secondary actions */
-    div[data-testid="stColumn"] .stButton button {
-        background: rgba(124, 77, 255, 0.05) !important;
-        border: 1px solid rgba(124, 77, 255, 0.2) !important;
-        color: #fff !important;
-        font-weight: 600 !important;
+    .stButton > button {
         border-radius: 12px !important;
-        margin-top: -0.5rem;
+        transition: all 0.2s ease !important;
+    }
+    
+    /* Specific styling for KPI buttons area */
+    div[data-testid="stColumn"] .stButton button {
+        background: rgba(124, 77, 255, 0.1) !important;
+        border: 1px solid rgba(124, 77, 255, 0.3) !important;
+        color: #fff !important;
+        font-size: 0.8rem !important;
+        height: 2.5rem !important;
+        margin-top: 0.8rem !important;
     }
     div[data-testid="stColumn"] .stButton button:hover {
+        background: rgba(124, 77, 255, 0.2) !important;
         border-color: #7c4dff !important;
-        background: rgba(124, 77, 255, 0.1) !important;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(124, 77, 255, 0.2);
     }
     div[data-testid="stColumn"] .stButton button:active {
-        transform: scale(0.98);
+        transform: translateY(0);
     }
 
     /* ── Section Headers ───────────────── */
@@ -242,11 +250,23 @@ with st.sidebar:
     if "kpi_filter" not in st.session_state:
         st.session_state.kpi_filter = "Todos"
 
+    # Find index of current selection
+    try:
+        current_idx = filter_options.index(st.session_state.kpi_filter)
+    except ValueError:
+        current_idx = 0
+
     view_filter = st.radio(
         "Exibir na tela:",
         filter_options,
-        key="kpi_filter", # Single source of truth
+        index=current_idx,
+        key="sidebar_radio" # Different key to avoid state conflict
     )
+
+    # Update state if radio changes
+    if st.session_state.sidebar_radio != st.session_state.kpi_filter:
+        st.session_state.kpi_filter = st.session_state.sidebar_radio
+        st.rerun()
 
     st.markdown("---")
 
@@ -423,39 +443,33 @@ best = df.loc[best_idx]
 # Layout for KPI cards
 k1, k2, k3, k4, k5 = st.columns(5)
 
-# Helper to avoid repetitive HTML
-def kpi_box(col, val, label, color="#7c4dff"):
+# Helper for KPI display
+def kpi_box(col, val, label, btn_label, state_val, color="#7c4dff"):
     col.markdown(f"""
     <div class="kpi-card">
         <p class="value" style="color: {color}">{val}</p>
         <p class="label">{label}</p>
     </div>
     """, unsafe_allow_html=True)
+    if col.button(btn_label, key=f"btn_{label}_{val}", use_container_width=True):
+        st.session_state.kpi_filter = state_val
+        st.rerun()
 
-kpi_box(k1, n_total, "Analisados")
-if k1.button("🔍 Ver Tudo", key=f"btn_all_{n_total}", use_container_width=True):
+kpi_box(k1, n_total, "Analisados", "🔍 Ver Todos", "Todos")
+kpi_box(k2, n_cheap, "🟢 Baratos", "🟢 Filtrar", "🟢 Apenas Baratos", "#00e676")
+kpi_box(k3, n_fair, "🟡 Justos", "🟡 Filtrar", "🟡 Apenas Justos", "#ffab00")
+kpi_box(k4, n_expensive, "🔴 Caros", "🔴 Filtrar", "🔴 Apenas Caros", "#ff1744")
+
+# Special card for Top Yield
+k5.markdown(f"""
+<div class="kpi-card">
+    <p class="value" style="font-size: 1.6rem; color: #fff">{best['Ticker']}</p>
+    <p class="label">🏆 Maior Yield ({best['FCF Yield']:.1%})</p>
+</div>
+""", unsafe_allow_html=True)
+if k5.button("🎯 Destaque", key="btn_top_yield", use_container_width=True):
+    # Just a reset for now or maybe filter to this asset?
     st.session_state.kpi_filter = "Todos"
-    st.rerun()
-
-kpi_box(k2, n_cheap, "🟢 Baratos", "#00e676")
-if k2.button("🟢 Filtrar", key=f"btn_cheap_{n_cheap}", use_container_width=True):
-    st.session_state.kpi_filter = "🟢 Apenas Baratos"
-    st.rerun()
-
-kpi_box(k3, n_fair, "🟡 Justos", "#ffab00")
-if k3.button("🟡 Filtrar", key=f"btn_fair_{n_fair}", use_container_width=True):
-    st.session_state.kpi_filter = "🟡 Apenas Justos"
-    st.rerun()
-
-kpi_box(k4, n_expensive, "🔴 Caros", "#ff1744")
-if k4.button("🔴 Filtrar", key=f"btn_exp_{n_expensive}", use_container_width=True):
-    st.session_state.kpi_filter = "🔴 Apenas Caros"
-    st.rerun()
-
-kpi_box(k5, best['Ticker'], f"🏆 Maior Yield ({best['FCF Yield']:.1%})")
-if k5.button("🎯 Ver Ativo", key="btn_top", use_container_width=True):
-    st.session_state.kpi_filter = "Todos"
-    # We could add an asset-specific filter here if requested
     st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
