@@ -453,10 +453,10 @@ best = df.loc[best_idx]
 k1, k2, k3, k4, k5 = st.columns(5)
 
 # Helper for KPI display
-def kpi_box(col, val, label, btn_label, state_val, color="#7c4dff"):
+def kpi_box(col, val, label, btn_label, state_val, color="#7c4dff", val_size="2.4rem"):
     col.markdown(f"""
     <div class="kpi-card">
-        <p class="value" style="color: {color}">{val}</p>
+        <p class="value" style="color: {color}; font-size: {val_size}">{val}</p>
         <p class="label">{label}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -469,17 +469,7 @@ kpi_box(k2, n_cheap, "🟢 Baratos", "🟢 Filtrar", "🟢 Apenas Baratos", "#00
 kpi_box(k3, n_fair, "🟡 Justos", "🟡 Filtrar", "🟡 Apenas Justos", "#ffab00")
 kpi_box(k4, n_expensive, "🔴 Caros", "🔴 Filtrar", "🔴 Apenas Caros", "#ff1744")
 
-# Special card for Top Yield
-k5.markdown(f"""
-<div class="kpi-card">
-    <p class="value" style="font-size: 1.6rem; color: #fff">{best['Ticker']}</p>
-    <p class="label">🏆 Maior Yield ({best['FCF Yield']:.1%})</p>
-</div>
-""", unsafe_allow_html=True)
-if k5.button("🎯 Destaque", key="btn_top_yield", use_container_width=True):
-    # Just a reset for now or maybe filter to this asset?
-    st.session_state.kpi_filter = "Todos"
-    st.rerun()
+kpi_box(k5, best['Ticker'], f"🏆 Maior Yield ({best['FCF Yield']:.1%})", "🎯 Destaque", "Todos", "#fff", "1.8rem")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
