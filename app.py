@@ -221,13 +221,26 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Filter preference
+    # Filter preference — syncs with clickable KPI cards
     st.subheader("🎯 Filtro de Exibição")
+    filter_options = ["Todos", "🟢 Apenas Baratos", "🔴 Apenas Caros", "🟡 Apenas Justos"]
+
+    # Initialize session state for KPI filter
+    if "kpi_filter" not in st.session_state:
+        st.session_state.kpi_filter = "Todos"
+
+    # Determine the current index from session state
+    current_idx = filter_options.index(st.session_state.kpi_filter) if st.session_state.kpi_filter in filter_options else 0
+
     view_filter = st.radio(
         "Exibir na tela:",
-        ["Todos", "🟢 Apenas Baratos", "🔴 Apenas Caros", "🟡 Apenas Justos"],
-        index=0,
+        filter_options,
+        index=current_idx,
+        key="sidebar_filter",
     )
+
+    # Sync: if user changes the radio, update session state
+    st.session_state.kpi_filter = view_filter
 
     st.markdown("---")
 
@@ -392,39 +405,69 @@ if filtered.empty:
     st.stop()
 
 # ─────────────────────────────────────────
-# KPI Cards
+# KPI Cards (clickable)
 # ─────────────────────────────────────────
 n_total = len(df)
-n_cheap = df['Status'].str.contains('Barato').sum()
-n_fair = df['Status'].str.contains('Justo').sum()
-n_expensive = df['Status'].str.contains('Caro').sum()
+n_cheap = int(df['Status'].str.contains('Barato').sum())
+n_fair = int(df['Status'].str.contains('Justo').sum())
+n_expensive = int(df['Status'].str.contains('Caro').sum())
 best_idx = df['FCF Yield'].idxmax()
 best = df.loc[best_idx]
 
-st.markdown(f"""
-<div class="kpi-row">
+# Clickable KPI cards using Streamlit columns + buttons
+kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+
+with kpi1:
+    st.markdown(f"""
     <div class="kpi-card">
         <p class="value">{n_total}</p>
         <p class="label">Ativos Analisados</p>
     </div>
+    """, unsafe_allow_html=True)
+    if st.button("🔍 Ver Todos", key="kpi_all", use_container_width=True):
+        st.session_state.kpi_filter = "Todos"
+        st.rerun()
+
+with kpi2:
+    st.markdown(f"""
     <div class="kpi-card">
         <p class="value" style="color: #00e676">{n_cheap}</p>
         <p class="label">🟢 Baratos</p>
     </div>
+    """, unsafe_allow_html=True)
+    if st.button(f"🟢 Filtrar ({n_cheap})", key="kpi_cheap", use_container_width=True):
+        st.session_state.kpi_filter = "🟢 Apenas Baratos"
+        st.rerun()
+
+with kpi3:
+    st.markdown(f"""
     <div class="kpi-card">
         <p class="value" style="color: #ffab00">{n_fair}</p>
         <p class="label">🟡 Justos</p>
     </div>
+    """, unsafe_allow_html=True)
+    if st.button(f"🟡 Filtrar ({n_fair})", key="kpi_fair", use_container_width=True):
+        st.session_state.kpi_filter = "🟡 Apenas Justos"
+        st.rerun()
+
+with kpi4:
+    st.markdown(f"""
     <div class="kpi-card">
         <p class="value" style="color: #ff1744">{n_expensive}</p>
         <p class="label">🔴 Caros</p>
     </div>
+    """, unsafe_allow_html=True)
+    if st.button(f"🔴 Filtrar ({n_expensive})", key="kpi_expensive", use_container_width=True):
+        st.session_state.kpi_filter = "🔴 Apenas Caros"
+        st.rerun()
+
+with kpi5:
+    st.markdown(f"""
     <div class="kpi-card">
         <p class="value" style="font-size:1.4rem">{best['Ticker']}</p>
         <p class="label">Maior Yield ({best['FCF Yield']:.1%})</p>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # Main Content Tabs
