@@ -90,29 +90,39 @@ st.markdown("""
         background: linear-gradient(145deg, #1e1e3f, #16213e);
         border: 1px solid rgba(124, 77, 255, 0.2);
         border-radius: 16px;
-        padding: 1.2rem;
+        padding: 1rem;
         text-align: center;
         width: 100%;
+        min-height: 110px; /* Force uniform height */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
     }
     .kpi-card:hover {
         border-color: rgba(124, 77, 255, 0.5);
         box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
     .kpi-card .value {
-        font-size: 2.4rem;
         font-weight: 800;
         margin: 0;
-        line-height: 1;
+        line-height: 1.1;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .kpi-card .label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
-        opacity: 0.8;
-        margin-top: 0.6rem;
+        letter-spacing: 1px;
+        opacity: 0.7;
+        margin-top: 0.5rem;
         color: #ddd;
+        line-height: 1.2;
     }
 
     /* ── Clickable KPI styling ─────────── */
@@ -128,8 +138,8 @@ st.markdown("""
         border: 1px solid rgba(124, 77, 255, 0.4) !important;
         color: #fff !important;
         font-size: 0.85rem !important;
-        height: 2.8rem !important;
-        margin-top: 1rem !important;
+        height: 2.6rem !important;
+        margin-top: 0 !important; /* Button attaches closely to card */
         width: 100%;
     }
     div[data-testid="stColumn"] .stButton button:hover {
