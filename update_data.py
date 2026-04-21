@@ -24,16 +24,18 @@ from engine import calculate_fcf, classify_status, _calculate_with_retry
 # ─────────────────────────────────────────────
 TICKERS_BR = [
     # Blue Chips / Ibovespa core
-    "PETR4.SA", "PETR3.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA",
+    "PETR4.SA", "PETR3.SA", "VALE3.SA", "ITUB4.SA", "ITUB3.SA",
+    "BBDC4.SA", "BBDC3.SA", "BBAS3.SA",
     "ABEV3.SA", "WEGE3.SA", "RENT3.SA", "SUZB3.SA",
-    "GGBR4.SA", "CSNA3.SA", "CMIG4.SA", "AXIA3.SA", "RADL3.SA",
+    "GGBR4.SA", "CSNA3.SA", "CMIG4.SA", "CMIG3.SA", "AXIA3.SA", "RADL3.SA",
     "VIVT3.SA", "MGLU3.SA", "LREN3.SA", "CSAN3.SA", "BPAC11.SA",
     "B3SA3.SA", "HAPV3.SA", "RDOR3.SA", "RAIL3.SA", "SBSP3.SA",
     "ENEV3.SA", "TOTS3.SA", "PRIO3.SA", "RECV3.SA", "VBBR3.SA",
-    "KLBN11.SA", "UGPA3.SA", "EQTL3.SA", "CPFE3.SA",
+    "KLBN11.SA", "KLBN4.SA", "UGPA3.SA", "EQTL3.SA", "CPFE3.SA",
     "CPLE3.SA", "TAEE11.SA", "CYRE3.SA", "MRVE3.SA",
     "SANB11.SA", "BRSR6.SA", "ABCB4.SA", "BMGB4.SA", "ITSA4.SA",
     "BBSE3.SA", "PSSA3.SA", "IRBR3.SA", "CXSE3.SA",
+    "ISAE4.SA", "ENGI11.SA", "NEOE3.SA",  # Utilities adicionais
     # Mid Caps
     "AZZA3.SA", "GRND3.SA", "ALPA4.SA",
     "ASAI3.SA", "MDIA3.SA", "NTCO3.SA", "HYPE3.SA",
@@ -44,12 +46,21 @@ TICKERS_BR = [
     "LWSA3.SA", "CASH3.SA", "BMOB3.SA", "POSI3.SA", "INTB3.SA",
     "FLRY3.SA", "DASA3.SA", "SMFT3.SA", "QUAL3.SA", "ODPV3.SA",
     "EMBJ3.SA", "HBSA3.SA",
-    "MOVI3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
+    "MOVI3.SA", "MOTV3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
     # Adicionados (atualizado 2026-04)
     "BRFS3.SA", "MRFG3.SA", "BEEF3.SA", "BHIA3.SA",
     "COGN3.SA", "YDUQ3.SA", "ECOR3.SA", "EGIE3.SA",
     "CURY3.SA", "GGPS3.SA", "JBSS3.SA", "BRAV3.SA",
+    # Alto volume B3 (expansão 2026-04)
+    "AUAU3.SA", "CMIN3.SA", "RAPT4.SA", "PNVL3.SA",
+    "TUPY3.SA", "POMO4.SA", "DXCO3.SA", "ONCO3.SA",
+    "VULC3.SA", "SBFG3.SA", "CEAB3.SA", "ANIM3.SA",
+    "PLPL3.SA", "MTRE3.SA", "MDNE3.SA", "AGRO3.SA",
+    "RAIZ4.SA", "SEER3.SA", "STBP3.SA", "TGMA3.SA",
+    "LOGN3.SA", "MILS3.SA", "WIZC3.SA", "KEPL3.SA",
+    "PINE4.SA", "TTEN3.SA",
 ]
+
 
 
 TICKERS_US = [
