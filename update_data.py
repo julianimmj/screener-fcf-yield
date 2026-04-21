@@ -23,30 +23,34 @@ from engine import calculate_fcf, classify_status, _calculate_with_retry
 # All 200 Tickers
 # ─────────────────────────────────────────────
 TICKERS_BR = [
-    "PETR4.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA",
+    # Blue Chips / Ibovespa core
+    "PETR4.SA", "PETR3.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA", "BBAS3.SA",
     "ABEV3.SA", "WEGE3.SA", "RENT3.SA", "SUZB3.SA",
     "GGBR4.SA", "CSNA3.SA", "CMIG4.SA", "AXIA3.SA", "RADL3.SA",
     "VIVT3.SA", "MGLU3.SA", "LREN3.SA", "CSAN3.SA", "BPAC11.SA",
     "B3SA3.SA", "HAPV3.SA", "RDOR3.SA", "RAIL3.SA", "SBSP3.SA",
-    "ENEV3.SA", "TOTS3.SA", "PRIO3.SA", "RRRP3.SA", "VBBR3.SA",
-    "KLBN11.SA", "UGPA3.SA", "MOTV3.SA", "EQTL3.SA", "CPFE3.SA",
-    "CPLE6.SA", "TAEE11.SA", "ENBR3.SA", "CYRE3.SA", "MRVE3.SA",
+    "ENEV3.SA", "TOTS3.SA", "PRIO3.SA", "RECV3.SA", "VBBR3.SA",
+    "KLBN11.SA", "UGPA3.SA", "EQTL3.SA", "CPFE3.SA",
+    "CPLE3.SA", "TAEE11.SA", "CYRE3.SA", "MRVE3.SA",
     "SANB11.SA", "BRSR6.SA", "ABCB4.SA", "BMGB4.SA", "ITSA4.SA",
-    "BBSE3.SA", "SULA11.SA", "PSSA3.SA", "IRBR3.SA", "CXSE3.SA",
-    "AUAU3.SA", "AMER3.SA", "SOMA3.SA", "GRND3.SA", "ALPA4.SA",
-    "ASAI3.SA", "MDIA3.SA", "NATU3.SA", "HYPE3.SA",
+    "BBSE3.SA", "PSSA3.SA", "IRBR3.SA", "CXSE3.SA",
+    # Mid Caps
+    "AZZA3.SA", "GRND3.SA", "ALPA4.SA",
+    "ASAI3.SA", "MDIA3.SA", "NTCO3.SA", "HYPE3.SA",
     "GOAU4.SA", "USIM5.SA", "BRKM5.SA", "UNIP6.SA", "FESA4.SA",
-    "AURE3.SA", "CSMG3.SA", "SAPR11.SA", "TRPL4.SA", "TIMS3.SA",
+    "AURE3.SA", "CSMG3.SA", "SAPR11.SA", "TIMS3.SA",
     "EZTC3.SA", "DIRR3.SA", "EVEN3.SA", "TEND3.SA", "JHSF3.SA",
-    "MULT3.SA", "IGTI11.SA", "ALSO3.SA", "SMAL11.SA",
+    "MULT3.SA", "IGTI11.SA", "ALOS3.SA",
     "LWSA3.SA", "CASH3.SA", "BMOB3.SA", "POSI3.SA", "INTB3.SA",
-    "FLRY3.SA", "DASA3.SA", "MATD3.SA", "QUAL3.SA", "ODPV3.SA",
-    "AZUL4.SA", "EMBJ3.SA", "HBSA3.SA",
+    "FLRY3.SA", "DASA3.SA", "SMFT3.SA", "QUAL3.SA", "ODPV3.SA",
+    "EMBJ3.SA", "HBSA3.SA",
     "MOVI3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
-    # Adicionados
-    "BRFS3.SA", "MRFG3.SA", "BEEF3.SA", "VIIA3.SA",
-    "COGN3.SA", "YDUQ3.SA", "ECOR3.SA", "EGIE3.SA", "PETR3.SA",
+    # Adicionados (atualizado 2026-04)
+    "BRFS3.SA", "MRFG3.SA", "BEEF3.SA", "BHIA3.SA",
+    "COGN3.SA", "YDUQ3.SA", "ECOR3.SA", "EGIE3.SA",
+    "CURY3.SA", "GGPS3.SA", "JBSS3.SA", "BRAV3.SA",
 ]
+
 
 TICKERS_US = [
     "AAPL", "MSFT", "GOOGL", "AMZN", "META",
