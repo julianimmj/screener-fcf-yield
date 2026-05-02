@@ -735,8 +735,7 @@ with tab_detail:
 st.markdown("---")
 st.markdown("""
 <div style="text-align:center; opacity:0.4; font-size:0.8rem; padding: 1rem 0">
-    <b>Screener FCF Yield "Antigravity"</b> · Dados via Yahoo Finance (atualização diária) · 
-    <a href="https://github.com/julianimmj/screener-fcf-yield" target="_blank" style="color:#7c4dff">github.com/julianimmj</a><br>
+    <b>Screener FCF Yield "Antigravity"</b> · Dados via Yahoo Finance (atualização diária)<br>
     Metodologia: (FCO − Capex − Juros − Impostos − Leases) ÷ Market Cap
 </div>
 """, unsafe_allow_html=True)
