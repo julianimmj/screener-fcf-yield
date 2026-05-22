@@ -38,25 +38,25 @@ TICKERS_BR = [
     "ISAE4.SA", "ENGI11.SA", "NEOE3.SA",  # Utilities adicionais
     # Mid Caps
     "AZZA3.SA", "GRND3.SA", "ALPA4.SA",
-    "ASAI3.SA", "MDIA3.SA", "NTCO3.SA", "HYPE3.SA",
+    "ASAI3.SA", "MDIA3.SA", "NATU3.SA", "HYPE3.SA",
     "GOAU4.SA", "USIM5.SA", "BRKM5.SA", "UNIP6.SA", "FESA4.SA",
     "AURE3.SA", "CSMG3.SA", "SAPR11.SA", "TIMS3.SA",
     "EZTC3.SA", "DIRR3.SA", "EVEN3.SA", "TEND3.SA", "JHSF3.SA",
     "MULT3.SA", "IGTI11.SA", "ALOS3.SA",
     "LWSA3.SA", "CASH3.SA", "BMOB3.SA", "POSI3.SA", "INTB3.SA",
-    "FLRY3.SA", "DASA3.SA", "SMFT3.SA", "QUAL3.SA", "ODPV3.SA",
+    "FLRY3.SA", "DASA3.SA", "SMFT3.SA", "QUAL3.SA", "SAUD3.SA",
     "EMBJ3.SA", "HBSA3.SA",
     "MOVI3.SA", "MOTV3.SA", "VAMO3.SA", "SIMH3.SA", "SMTO3.SA", "SLCE3.SA",
     # Adicionados (atualizado 2026-04)
-    "BRFS3.SA", "MRFG3.SA", "BEEF3.SA", "BHIA3.SA",
+    "MBRF3.SA", "BEEF3.SA", "BHIA3.SA",
     "COGN3.SA", "YDUQ3.SA", "ECOR3.SA", "EGIE3.SA",
-    "CURY3.SA", "GGPS3.SA", "JBSS3.SA", "BRAV3.SA",
+    "CURY3.SA", "GGPS3.SA", "JBSS32.SA", "BRAV3.SA",
     # Alto volume B3 (expansão 2026-04)
     "AUAU3.SA", "CMIN3.SA", "RAPT4.SA", "PNVL3.SA",
     "TUPY3.SA", "POMO4.SA", "DXCO3.SA", "ONCO3.SA",
     "VULC3.SA", "SBFG3.SA", "CEAB3.SA", "ANIM3.SA",
     "PLPL3.SA", "MTRE3.SA", "MDNE3.SA", "AGRO3.SA",
-    "RAIZ4.SA", "SEER3.SA", "STBP3.SA", "TGMA3.SA",
+    "RAIZ4.SA", "SEER3.SA", "TGMA3.SA",
     "LOGN3.SA", "MILS3.SA", "WIZC3.SA", "KEPL3.SA",
     "PINE4.SA", "TTEN3.SA",
 ]
