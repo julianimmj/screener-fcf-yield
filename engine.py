@@ -17,6 +17,22 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+def _reset_yfinance_session():
+    """Limpa sessão/crumb do yfinance para forçar reautenticação."""
+    try:
+        import yfinance.data as _yfdata
+        if hasattr(_yfdata, '_crumb') and hasattr(_yfdata, '_cookie'):
+            _yfdata._crumb = None
+            _yfdata._cookie = None
+    except Exception:
+        pass
+    try:
+        if hasattr(yf, 'shared') and hasattr(yf.shared, '_CACHE'):
+            yf.shared._CACHE = {}
+    except Exception:
+        pass
+
+
 # ─────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────
@@ -101,12 +117,19 @@ def calculate_fcf(ticker_symbol: str, conservative: bool = False) -> dict | None
     """
     try:
         tk = yf.Ticker(ticker_symbol)
-        info = tk.info
 
-        # ── Statements ──────────────────────────
-        cf = tk.cashflow
-        inc = tk.income_stmt
-        bs = tk.balance_sheet
+        # ── Statements with retry/reset ─────────
+        cf, inc, bs = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        for attempt in range(2):
+            try:
+                cf = tk.cashflow
+                inc = tk.income_stmt
+                bs = tk.balance_sheet
+                if not cf.empty and not inc.empty:
+                    break
+            except Exception:
+                _reset_yfinance_session()
+                time.sleep(0.5)
 
         if cf.empty or inc.empty:
             return None
@@ -176,11 +199,35 @@ def calculate_fcf(ticker_symbol: str, conservative: bool = False) -> dict | None
         # ── Step 3: FCF ─────────────────────────
         fcf = adjusted_fco + capex - interest - taxes - leases
 
-        # ── Market Cap ──────────────────────────
-        market_cap = info.get('marketCap', 0)
+        # ── Price from history as base fallback ─
+        price = 0.0
+        try:
+            hist = tk.history(period="5d")
+            if not hist.empty and 'Close' in hist.columns:
+                price = float(hist['Close'].iloc[-1])
+        except Exception:
+            _reset_yfinance_session()
+
+        # ── Market Cap & Sector from Info ───────
+        market_cap = 0.0
+        sector = 'Desconhecido'
+        try:
+            info = tk.info
+            if isinstance(info, dict):
+                price = info.get('currentPrice', info.get('previousClose', price))
+                sector = info.get('sector', 'Desconhecido')
+                market_cap = info.get('marketCap', 0)
+        except Exception:
+            _reset_yfinance_session()
+
         if not market_cap:
-            shares = info.get('sharesOutstanding', 0)
-            price = info.get('currentPrice', info.get('previousClose', 0))
+            shares = 0
+            try:
+                info = tk.info
+                if isinstance(info, dict):
+                    shares = info.get('sharesOutstanding', 0)
+            except Exception:
+                pass
             market_cap = shares * price if shares and price else 0
 
         # ── Step 5: Yield ───────────────────────
@@ -188,10 +235,6 @@ def calculate_fcf(ticker_symbol: str, conservative: bool = False) -> dict | None
 
         # ── Revenue Growth 5Y (Dica 3) ──────────
         rev_growth_5y = _revenue_growth_5y(tk)
-
-        # ── Sector ──────────────────────────────
-        sector = info.get('sector', 'Desconhecido')
-        price = info.get('currentPrice', info.get('previousClose', 0))
 
         return {
             'Ticker': ticker_symbol,
